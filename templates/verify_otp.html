@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify OTP</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #333;
+            position: relative;
+            overflow: hidden;
+            background-color: #f5f9ff;
+        }
+        
+        #video-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: -1;
+            opacity: 0.7;
+        }
+        
+        .login-container {
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 119, 255, 0.1);
+            padding: 30px;
+            width: 350px;
+            text-align: center;
+            backdrop-filter: blur(5px);
+        }
+        
+        .login-container h1 {
+            color: #0077ff;
+            margin-top: 0;
+            font-size: 24px;
+        }
+        
+        .login-container p {
+            color: #666;
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 14px;
+            text-align: center;
+            letter-spacing: 2px;
+        }
+        
+        .login-button {
+            width: 100%;
+            padding: 12px;
+            background-color: #0077ff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .login-button:hover {
+            background-color: #005bb7;
+        }
+        
+        .alert {
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .alert-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .resend-link {
+            margin-top: 15px;
+            font-size: 14px;
+        }
+        
+        .resend-link a {
+            color: #0077ff;
+            text-decoration: none;
+        }
+        
+        .resend-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <video autoplay muted loop id="video-bg">
+        <source src="{{ url_for('static', filename='background.mp4') }}" type="video/mp4">
+    </video>
+
+    <div class="login-container">
+        <h1>Verify Email</h1>
+        <p>We sent a 6-digit code to <strong>{{ session.temp_user.email }}</strong></p>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <form method="POST" action="{{ url_for('verify_otp') }}">
+            <div class="form-group">
+                <label for="otp">Verification Code</label>
+                <input type="text" 
+                       id="otp" 
+                       name="otp" 
+                       required 
+                       pattern="\d{6}" 
+                       maxlength="6"
+                       placeholder="••••••"
+                       inputmode="numeric">
+            </div>
+            
+            <button type="submit" class="login-button">Verify</button>
+        </form>
+        
+        <p class="resend-link">
+            Didn't receive code? 
+            <a href="#" onclick="alert('A new OTP has been sent!')">Resend OTP</a>
+        </p>
+    </div>
+
+    <script>
+        // Auto-focus OTP input and auto-advance fields
+        document.addEventListener('DOMContentLoaded', function() {
+            const otpInput = document.getElementById('otp');
+            otpInput.focus();
+            
+            // Format OTP input with spaces (visual only)
+            otpInput.addEventListener('input', function(e) {
+                this.value = this.value.replace(/\s/g, '');
+            });
+        });
+    </script>
+</body>
+</html>
