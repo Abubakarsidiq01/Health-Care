@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 load_dotenv()  # Loads variables from .env
+
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from flask_bcrypt import Bcrypt
 import os
@@ -47,15 +48,27 @@ def generate_otp():
     return ''.join(random.choices(string.digits, k=6))
 
 def send_otp_email(receiver_email, otp):
-    msg = EmailMessage()
-    msg['Subject'] = 'Your Verification OTP'
-    msg['From'] = EMAIL_ADDRESS
-    msg['To'] = receiver_email
-    msg.set_content(f'Your OTP is: {otp}\nValid for 5 minutes')
-    
-    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-        smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
-        smtp.send_message(msg)
+    try:
+        msg = EmailMessage()
+        msg['Subject'] = 'Your OTP Verification Code'
+        msg['From'] = f"Health App <{EMAIL_ADDRESS}>"
+        msg['To'] = receiver_email
+        msg.set_content(f"""
+        Hello,
+
+        Your One-Time Password (OTP) is: {otp}
+        It will expire in 5 minutes.
+
+        If you did not request this, please ignore this message.
+
+        Thanks,
+        Health App Team
+        """)
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+            smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+            smtp.send_message(msg)
+    except Exception as e:
+        print(f"❌ Failed to send email to {receiver_email}: {e}")
 
 # Routes
 @app.route('/')
@@ -147,15 +160,12 @@ def google_callback():
             flash('Authorization failed: No token received', 'danger')
             return redirect(url_for('login'))
         
-        # Verify ID token with issuer check
         id_info = id_token.verify_oauth2_token(
             token['id_token'],
             google_requests.Request(),
             os.getenv('GOOGLE_CLIENT_ID'),
             clock_skew_in_seconds=10
         )
-        
-        # Explicit issuer verification
         if id_info['iss'] not in ['accounts.google.com', 'https://accounts.google.com']:
             raise ValueError("Invalid token issuer")
         
@@ -163,13 +173,11 @@ def google_callback():
         name = id_info.get('name', email.split('@')[0])
         picture = id_info.get('picture')
         
-        # Check if user exists
         if email in emails_db:
             if session.get('auth_action') == 'register':
                 flash('This email is already registered', 'warning')
                 return redirect(url_for('register'))
             
-            # Login existing user
             user_id = emails_db[email]
             session['user_id'] = user_id
             flash('Login successful!', 'success')
@@ -178,7 +186,6 @@ def google_callback():
                 flash('No account found. Please register first.', 'warning')
                 return redirect(url_for('register'))
             
-            # Register new user
             user_id = str(uuid4())
             users_db[user_id] = {
                 'email': email,
@@ -215,7 +222,6 @@ def logout():
     flash('You have been logged out', 'info')
     return redirect(url_for('login'))
 
-
 @app.route('/debug-logo')
 def debug_logo():
     import os
@@ -227,6 +233,44 @@ def debug_logo():
 def view_logo():
     with open(os.path.join(app.static_folder, 'images', 'google-logo.svg'), 'r') as f:
         return f.read(), 200, {'Content-Type': 'image/svg+xml'}
+
+@app.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        email = request.form['email']
+        if email in emails_db:
+            otp = generate_otp()
+            otp_storage[email] = otp
+            send_otp_email(email, otp)
+            session['reset_email'] = email
+            flash('OTP has been sent to your email.', 'success')
+            return redirect(url_for('reset_password'))
+        else:
+            flash('Email not found.', 'danger')
+    return render_template('forgot_password.html')
+
+@app.route('/reset-password', methods=['GET', 'POST'])
+def reset_password():
+    if 'reset_email' not in session:
+        return redirect(url_for('forgot_password'))
+
+    email = session['reset_email']
+    if request.method == 'POST':
+        otp = request.form['otp']
+        new_password = request.form['new_password']
+
+        if otp_storage.get(email) == otp:
+            user_id = emails_db.get(email)
+            if user_id:
+                users_db[user_id]['password'] = bcrypt.generate_password_hash(new_password).decode('utf-8')
+                del otp_storage[email]
+                del session['reset_email']
+                flash('Password reset successfully! Please login.', 'success')
+                return redirect(url_for('login'))
+        else:
+            flash('Invalid OTP', 'danger')
+
+    return render_template('reset_password.html')
 
 if __name__ == '__main__':
     app.run(debug=True)
