@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}Review of Systems{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2 class="text-primary my-4">🩺 Review of Systems (ROS)</h2>
+    <div class="mb-4 p-3 border rounded bg-light d-print-block">
+        <h4 class="text-primary mb-1">🧑‍⚕️ Patient Info</h4>
+        <p class="mb-0"><strong>Name:</strong> {{ patient.name }}</p>
+        <p class="mb-0"><strong>ID:</strong> {{ patient.id }}</p>
+        <p><strong>Phone:</strong> {{ patient.phone }}</p>
+    </div>    
+    <form method="POST">
+        {% set system_map = {
+            "Constitutional": ["Weight loss", "Fever", "Fatigue", "Normal", "Other"],
+            "Eyes": ["Vision changes", "Eye pain", "Redness", "Normal", "Other"],
+            "Ears, Nose, Mouth, Throat": ["Hearing loss", "Sore throat", "Nasal congestion", "Normal", "Other"],
+            "Cardiovascular": ["Chest pain", "Palpitations", "Shortness of breath", "Normal", "Other"],
+            "Respiratory": ["Cough", "Wheezing", "Difficulty breathing", "Normal", "Other"],
+            "Gastrointestinal": ["Nausea", "Vomiting", "Diarrhea", "Constipation", "Normal", "Other"],
+            "Genitourinary": ["Urinary frequency", "Urgency", "Incontinence", "Normal", "Other"],
+            "Musculoskeletal": ["Joint pain", "Muscle weakness", "Normal", "Other"],
+            "Neurological": ["Headaches", "Dizziness", "Seizures", "Normal", "Other"],
+            "Skin": ["Rashes", "Itching", "Lesions", "Normal", "Other"],
+            "Endocrine": ["Heat intolerance", "Cold intolerance", "Excessive thirst", "Normal", "Other"],
+            "Hematologic/Lymphatic": ["Easy bruising", "Swollen lymph nodes", "Normal", "Other"],
+            "Allergic/Immunologic": ["Allergies", "Autoimmune conditions", "Normal", "Other"],
+            "Other": ["None", "Normal", "Other"]
+        } %}
+
+        <div class="row">
+            {% for system, options in system_map.items() %}
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">{{ system }}</label>
+                <select name="{{ system }}" class="form-select blue-dropdown" required>
+                    <option value="">-- Select --</option>
+                    {% for opt in options %}
+                    <option value="{{ opt }}" {% if ros.get(system) == opt %}selected{% endif %}>{{ opt }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- General Notes with Voice to Text -->
+        <div class="ros-notes-box p-3 mb-4">
+            <label class="form-label fw-bold">📝 General Review Notes</label>
+            <textarea name="notes" class="form-control ros-lemon-textarea" rows="4" id="notesBox">{{ ros.get('notes', '') }}</textarea>
+            <button type="button" class="btn voice-green-btn mt-2" onclick="toggleSpeech()">
+                <span id="micIcon">🎤</span> Voice-to-Text
+            </button>
+        </div>
+
+        <!-- Buttons -->
+        <div class="d-flex justify-content-between align-items-center mt-4 flex-wrap gap-2">
+            <div class="d-flex gap-3">
+                <button type="submit" class="btn btn-primary">💾 Save ROS</button>
+                <button type="button" class="btn btn-outline-dark" onclick="markAllNormal()">✅ Mark All Normal</button>
+                <button type="button" onclick="window.print()" class="btn btn-outline-primary">🖨️ Print Record</button>
+
+            </div>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">⬅ Back to Dashboard</a>
+        </div>
+    </form>
+</div>
+
+<!-- JS for mark all + toggle speech -->
+<script>
+    let recognition;
+    let isListening = false;
+
+    function toggleSpeech() {
+        const notesBox = document.getElementById("notesBox");
+        const micIcon = document.getElementById("micIcon");
+
+        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+            alert('Speech recognition not supported in your browser.');
+            return;
+        }
+
+        if (!recognition) {
+            recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            recognition.lang = 'en-US';
+            recognition.continuous = true;
+            recognition.interimResults = false;
+
+            recognition.onresult = function(event) {
+                let finalTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript + ' ';
+                    }
+                }
+                notesBox.value += finalTranscript;
+            };
+
+            recognition.onend = function() {
+                isListening = false;
+                micIcon.innerText = "🎤";
+            };
+
+            recognition.onerror = function() {
+                isListening = false;
+                micIcon.innerText = "🎤";
+            };
+        }
+
+        if (!isListening) {
+            recognition.start();
+            isListening = true;
+            micIcon.innerHTML = "<span class='blinking'>🔴</span>";
+
+            notesBox.scrollIntoView({ behavior: "smooth", block: "center" });
+            notesBox.focus();
+
+
+        } else {
+            recognition.stop();
+            isListening = false;
+            micIcon.innerText = "🎤";
+        }
+    }
+
+    function markAllNormal() {
+        const selects = document.querySelectorAll("select");
+        selects.forEach(select => {
+            for (let option of select.options) {
+                option.selected = option.value === "Normal";
+            }
+        });
+    }
+</script>
+{% endblock %}

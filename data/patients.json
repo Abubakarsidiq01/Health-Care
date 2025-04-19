@@ -1,0 +1,24 @@
+[
+  {
+    "id": "PT-496699",
+    "name": "ABUBAKAR-SIDIQ BOLAKALE",
+    "email": "abolakal@gsumail.gram.edu",
+    "phone": "3182785904",
+    "address": "403 main street",
+    "state": "LA",
+    "country": "United States",
+    "next_of_kin": "Ronaldo",
+    "blood_group": "O+"
+  },
+  {
+    "id": "PT-309879",
+    "name": "Gideon",
+    "email": "snngideon@gmail.com",
+    "phone": "3183502507",
+    "address": "403 main street",
+    "state": "LA",
+    "country": "United States",
+    "next_of_kin": "Goat",
+    "blood_group": "AB+"
+  }
+]
