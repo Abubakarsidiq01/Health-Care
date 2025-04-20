@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2 class="text-primary my-4">🛡️ Admin Dashboard</h2>
+
+    <input type="text" id="searchInput" onkeyup="filterTable()" class="form-control mb-3" placeholder="Search patients by name, ID, or email">
+
+    <table class="table table-bordered table-hover">
+        <thead class="table-primary">
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Last ROS Save</th>
+                <th>Saved By</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="patientTable">
+            {% for p in patients %}
+            <tr>
+                <td>{{ p.id }}</td>
+                <td>{{ p.name }}</td>
+                <td>{{ p.email }}</td>
+                <td>{{ p.phone }}</td>
+                <td>{{ p.last_saved }}</td>
+                <td>{{ p.saved_by }}</td>
+                <td>
+                    <a href="{{ url_for('ros_history', patient_id=p.id) }}" class="btn btn-sm btn-outline-info mb-1">📜 View ROS</a>
+                    <a href="{{ url_for('hpi_form', patient_id=p.id) }}" class="btn btn-sm btn-outline-secondary mb-1">📄 View HPI</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+function filterTable() {
+    let input = document.getElementById("searchInput").value.toLowerCase();
+    let rows = document.querySelectorAll("#patientTable tr");
+
+    rows.forEach(row => {
+        let text = row.textContent.toLowerCase();
+        row.style.display = text.includes(input) ? "" : "none";
+    });
+}
+</script>
+{% endblock %}

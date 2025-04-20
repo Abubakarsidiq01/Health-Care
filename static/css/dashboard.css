@@ -17,7 +17,6 @@ body {
     z-index: 1000;
 }
 
-/* Nav links aligned to the right */
 .nav-links {
     list-style: none;
     display: flex;
@@ -148,7 +147,6 @@ th, td {
     font-size: 14px;
 }
 
-/* Custom style for table header */
 .table th {
     background-color: #0077cc;
     color: white;
@@ -157,7 +155,6 @@ th, td {
     vertical-align: middle;
 }
 
-/* Custom style for patient data column */
 .table-data {
     background-color: #e6f2ff !important;
     color: #004080;
@@ -199,6 +196,7 @@ th, td {
         padding: 20px;
     }
 }
+
 /* === Dark Mode Styling === */
 body.dark-mode {
     background-color: #121212;
@@ -241,7 +239,7 @@ body.dark-mode .alert {
     color: #fff;
 }
 
-/* Blue Dropdown Styling */
+/* === ROS Specific Styles === */
 .blue-dropdown {
     background-color: #0077ff;
     color: white;
@@ -249,7 +247,6 @@ body.dark-mode .alert {
     border-radius: 6px;
 }
 
-/* Lemon Notes Box */
 .ros-notes-box {
     background-color: #fffacd;
     border: 2px dashed #e8d100;
@@ -266,7 +263,7 @@ body.dark-mode .alert {
     font-size: 15px;
 }
 
-/* Green Mic Button */
+/* === Mic Button === */
 .voice-green-btn {
     background-color: #28a745;
     color: white;
@@ -279,30 +276,52 @@ body.dark-mode .alert {
     background-color: #218838;
 }
 
-.voice-green-btn:hover {
-    background-color: #de2929;
-}
-
-#notesBox {
-    border-radius: 12px;
-    padding: 10px;
-    border: 2px dashed #0077ff;
-    margin-top: 20px;
-    font-family: 'Courier New', monospace;
-}
-
+/* === Mic Blinking === */
 .blinking {
     animation: blink 1s infinite;
 }
-
 @keyframes blink {
     0%, 100% { opacity: 1; }
     50% { opacity: 0; }
 }
 
+/* === Diagnosis Box === */
+.diagnosis-box {
+    background-color: #f9f9ff;
+    border-left: 5px solid #0077ff;
+    border-radius: 8px;
+    padding: 16px;
+}
 
+/* === Severity Badges === */
+.bg-critical {
+    background-color: #dc3545; /* red */
+    color: white;
+    padding: 4px 8px;
+    border-radius: 5px;
+    font-weight: bold;
+}
+.bg-moderate {
+    background-color: #ffc107; /* yellow */
+    color: black;
+    padding: 4px 8px;
+    border-radius: 5px;
+    font-weight: bold;
+}
+.bg-mild {
+    background-color: #28a745; /* green */
+    color: white;
+    padding: 4px 8px;
+    border-radius: 5px;
+    font-weight: bold;
+}
+
+/* === Print Styling === */
 @media print {
-    nav, .btn, .voice-green-btn, .d-flex.justify-content-between, .voice-green-btn {
+    nav,
+    .btn,
+    .voice-green-btn,
+    .d-flex.justify-content-between {
         display: none !important;
     }
 
@@ -334,4 +353,16 @@ body.dark-mode .alert {
         color: black !important;
         border: 1px solid #aaa;
     }
+}
+
+.labtest-box {
+    background-color: #f0fff4;
+    border-left: 5px solid #28a745;
+    border-radius: 8px;
+    padding: 16px;
+}
+#templateSelector {
+    background-color: #eef5ff;
+    font-weight: 600;
+    color: #0077ff;
 }

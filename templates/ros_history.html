@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}ROS History{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2 class="text-primary mb-4">🧾 ROS History for {{ patient.name }} ({{ patient.id }})</h2>
+
+    {% if records %}
+        {% for record in records %}
+        <div class="mb-4 p-3 border rounded">
+            <h5 class="text-secondary">Saved on {{ record.meta.timestamp }} by {{ record.meta.saved_by }} ({{ record.meta.email }})</h5>
+            <ul>
+                {% for system, value in record.data.items() %}
+                    {% if system != 'notes' %}
+                        <li><strong>{{ system }}:</strong> {{ value }}</li>
+                    {% endif %}
+                {% endfor %}
+            </ul>
+            {% if record.data.notes %}
+            <div class="mt-2">
+                <strong>Notes:</strong> <em>{{ record.data.notes }}</em>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    {% else %}
+        <p>No previous records found.</p>
+    {% endif %}
+
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">⬅ Back to Dashboard</a>
+</div>
+{% endblock %}

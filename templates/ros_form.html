@@ -4,12 +4,26 @@
 {% block content %}
 <div class="container">
     <h2 class="text-primary my-4">🩺 Review of Systems (ROS)</h2>
+
+    <!-- Patient Info -->
     <div class="mb-4 p-3 border rounded bg-light d-print-block">
         <h4 class="text-primary mb-1">🧑‍⚕️ Patient Info</h4>
         <p class="mb-0"><strong>Name:</strong> {{ patient.name }}</p>
         <p class="mb-0"><strong>ID:</strong> {{ patient.id }}</p>
         <p><strong>Phone:</strong> {{ patient.phone }}</p>
-    </div>    
+    </div>
+
+    <!-- Template Selector -->
+    <div class="mb-4 d-print-none">
+        <label class="form-label fw-bold text-primary">🩺 Select ROS Template (Optional)</label>
+        <select id="templateSelector" class="form-select" onchange="applyTemplate()">
+            <option value="">-- Choose Template --</option>
+            <option value="cardio">Cardiology</option>
+            <option value="respiratory">Pulmonology</option>
+            <option value="neuro">Neurology</option>
+        </select>
+    </div>
+
     <form method="POST">
         {% set system_map = {
             "Constitutional": ["Weight loss", "Fever", "Fatigue", "Normal", "Other"],
@@ -32,7 +46,7 @@
             {% for system, options in system_map.items() %}
             <div class="col-md-6 mb-3">
                 <label class="form-label fw-bold">{{ system }}</label>
-                <select name="{{ system }}" class="form-select blue-dropdown" required>
+                <select name="{{ system }}" id="ros-{{ system }}" class="form-select blue-dropdown" required>
                     <option value="">-- Select --</option>
                     {% for opt in options %}
                     <option value="{{ opt }}" {% if ros.get(system) == opt %}selected{% endif %}>{{ opt }}</option>
@@ -42,7 +56,19 @@
             {% endfor %}
         </div>
 
-        <!-- General Notes with Voice to Text -->
+        <!-- Suggested Diagnoses -->
+        <div class="mt-4 p-3 diagnosis-box d-print-none">
+            <h5 class="text-primary">🧠 Suggested Diagnoses</h5>
+            <ul id="diagnosis-list" class="text-dark fw-semibold mb-0"></ul>
+        </div>
+
+        <!-- Suggested Lab Tests -->
+        <div class="mt-4 p-3 labtest-box d-print-none">
+            <h5 class="text-success">🧪 Suggested Lab Tests</h5>
+            <ul id="labtest-list" class="text-dark fw-semibold mb-0"></ul>
+        </div>
+
+        <!-- Notes Section -->
         <div class="ros-notes-box p-3 mb-4">
             <label class="form-label fw-bold">📝 General Review Notes</label>
             <textarea name="notes" class="form-control ros-lemon-textarea" rows="4" id="notesBox">{{ ros.get('notes', '') }}</textarea>
@@ -51,20 +77,26 @@
             </button>
         </div>
 
-        <!-- Buttons -->
+        <!-- Action Buttons -->
         <div class="d-flex justify-content-between align-items-center mt-4 flex-wrap gap-2">
             <div class="d-flex gap-3">
                 <button type="submit" class="btn btn-primary">💾 Save ROS</button>
                 <button type="button" class="btn btn-outline-dark" onclick="markAllNormal()">✅ Mark All Normal</button>
-                <button type="button" onclick="window.print()" class="btn btn-outline-primary">🖨️ Print Record</button>
-
+                <button type="button" onclick="window.print()" class="btn btn-outline-primary">🖨️ Print Report</button>
             </div>
             <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">⬅ Back to Dashboard</a>
         </div>
     </form>
+
+    {% if ros.meta %}
+    <div class="mt-4 p-3 border bg-light small text-muted d-print-block">
+        <p>Last saved by: <strong>{{ ros.meta.saved_by }}</strong> ({{ ros.meta.email }})</p>
+        <p>Saved on: {{ ros.meta.timestamp }}</p>
+    </div>
+    {% endif %}
 </div>
 
-<!-- JS for mark all + toggle speech -->
+<!-- Script -->
 <script>
     let recognition;
     let isListening = false;
@@ -74,7 +106,7 @@
         const micIcon = document.getElementById("micIcon");
 
         if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-            alert('Speech recognition not supported in your browser.');
+            alert('Speech recognition not supported.');
             return;
         }
 
@@ -94,12 +126,12 @@
                 notesBox.value += finalTranscript;
             };
 
-            recognition.onend = function() {
+            recognition.onend = () => {
                 isListening = false;
                 micIcon.innerText = "🎤";
             };
 
-            recognition.onerror = function() {
+            recognition.onerror = () => {
                 isListening = false;
                 micIcon.innerText = "🎤";
             };
@@ -109,11 +141,8 @@
             recognition.start();
             isListening = true;
             micIcon.innerHTML = "<span class='blinking'>🔴</span>";
-
             notesBox.scrollIntoView({ behavior: "smooth", block: "center" });
             notesBox.focus();
-
-
         } else {
             recognition.stop();
             isListening = false;
@@ -128,6 +157,199 @@
                 option.selected = option.value === "Normal";
             }
         });
+        checkDiagnoses();
     }
+
+    const rules = [
+        {
+            conditions: { "Respiratory": ["Cough", "Wheezing"] },
+            diagnosis: "Asthma or Bronchitis",
+            severity: "moderate"
+        },
+        {
+            conditions: { "Cardiovascular": ["Chest pain", "Palpitations"] },
+            diagnosis: "Possible Angina or Arrhythmia",
+            severity: "critical"
+        },
+        {
+            conditions: { "Neurological": ["Headaches", "Dizziness"] },
+            diagnosis: "Migraine or Vestibular Syndrome",
+            severity: "mild"
+        },
+        {
+            conditions: { "Genitourinary": ["Urinary frequency", "Urgency"] },
+            diagnosis: "Urinary Tract Infection (UTI)",
+            severity: "moderate"
+        },
+        {
+            conditions: { "Constitutional": ["Weight loss", "Fatigue", "Fever"] },
+            diagnosis: "Chronic Disease or Cancer Red Flag",
+            severity: "critical"
+        }
+    ];
+
+    function checkDiagnoses() {
+        const diagnoses = [];
+        const selected = {};
+        document.querySelectorAll("select").forEach(sel => {
+            selected[sel.name] = sel.value;
+        });
+
+        rules.forEach(rule => {
+            let match = true;
+            for (let sys in rule.conditions) {
+                const required = rule.conditions[sys];
+                if (!required.includes(selected[sys])) {
+                    match = false;
+                    break;
+                }
+            }
+            if (match) diagnoses.push(rule);
+        });
+
+        const list = document.getElementById("diagnosis-list");
+        list.innerHTML = "";
+
+        if (diagnoses.length > 0) {
+            diagnoses.forEach(d => {
+                const li = document.createElement("li");
+                li.innerHTML = `<span class="badge bg-${d.severity} me-2">${d.severity.toUpperCase()}</span> ${d.diagnosis}`;
+                li.classList.add("mb-2");
+                list.appendChild(li);
+            });
+        } else {
+            const li = document.createElement("li");
+            li.textContent = "No strong diagnostic patterns yet.";
+            list.appendChild(li);
+        }
+    }
+
+    
+    document.addEventListener("DOMContentLoaded", () => {
+        document.querySelectorAll("select").forEach(sel => {
+            sel.addEventListener("change", () => {
+                checkDiagnoses();
+                checkLabTests();
+            });
+        });
+        checkDiagnoses();
+        checkLabTests();
+    });
+
+        
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const fields = document.querySelectorAll("select, textarea");
+            
+        // Load draft if it exists
+        const draft = JSON.parse(localStorage.getItem("ros_draft") || "{}");
+        fields.forEach(field => {
+            if (draft[field.id]) {
+                field.value = draft[field.id];
+            }
+        
+            // Save draft on change
+            field.addEventListener("change", () => {
+                const updatedDraft = JSON.parse(localStorage.getItem("ros_draft") || "{}");
+                updatedDraft[field.id] = field.value;
+                localStorage.setItem("ros_draft", JSON.stringify(updatedDraft));
+            });
+        });
+    });
+    
+
+    const testRules = [
+    {
+        conditions: { "Respiratory": ["Cough", "Wheezing"] },
+        tests: ["Chest X-Ray", "Spirometry"]
+    },
+    {
+        conditions: { "Cardiovascular": ["Chest pain", "Palpitations"] },
+        tests: ["ECG", "Troponin", "Echocardiogram"]
+    },
+    {
+        conditions: { "Constitutional": ["Weight loss", "Fatigue", "Fever"] },
+        tests: ["CBC", "ESR", "Blood Culture"]
+    },
+    {
+        conditions: { "Neurological": ["Dizziness", "Headaches"] },
+        tests: ["CT Head", "MRI Brain"]
+    },
+    {
+        conditions: { "Genitourinary": ["Urinary frequency", "Urgency"] },
+        tests: ["Urinalysis", "Urine Culture"]
+    }
+];
+
+    function checkLabTests() {
+        const suggestedTests = new Set();
+        const selected = {};
+        document.querySelectorAll("select").forEach(sel => {
+            selected[sel.name] = sel.value;
+        });
+
+        testRules.forEach(rule => {
+            let match = true;
+            for (let sys in rule.conditions) {
+                const required = rule.conditions[sys];
+                if (!required.includes(selected[sys])) {
+                    match = false;
+                    break;
+                }
+            }
+            if (match) {
+                rule.tests.forEach(test => suggestedTests.add(test));
+            }
+        });
+
+        const list = document.getElementById("labtest-list");
+        list.innerHTML = "";
+
+        if (suggestedTests.size > 0) {
+            suggestedTests.forEach(test => {
+                const li = document.createElement("li");
+                li.textContent = test;
+                list.appendChild(li);
+            });
+        } else {
+            const li = document.createElement("li");
+            li.textContent = "No lab tests recommended yet.";
+            list.appendChild(li);
+        }
+    }
+
+    const rosTemplates = {
+        cardio: {
+            "Cardiovascular": "Chest pain",
+            "Constitutional": "Fatigue",
+            "Neurological": "Dizziness"
+        },
+        respiratory: {
+            "Respiratory": "Cough",
+            "Constitutional": "Fever",
+            "Skin": "Normal"
+        },
+        neuro: {
+            "Neurological": "Headaches",
+            "Constitutional": "Fatigue",
+            "Eyes": "Vision changes"
+        }
+    };
+    
+    function applyTemplate() {
+        const templateKey = document.getElementById("templateSelector").value;
+        const template = rosTemplates[templateKey];
+    
+        if (!template) return;
+    
+        Object.keys(template).forEach(system => {
+            const field = document.querySelector(`select[name="${system}"]`);
+            if (field) {
+                field.value = template[system];
+                field.dispatchEvent(new Event('change')); // trigger logic like diagnoses
+            }
+        });
+    }
+    
 </script>
 {% endblock %}

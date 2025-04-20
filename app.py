@@ -1,3 +1,4 @@
+from datetime import datetime 
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -14,6 +15,8 @@ from werkzeug.utils import secure_filename
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 import json
+
+
 
 # === JSON LOAD/SAVE UTILS ===
 def load_data():
@@ -73,26 +76,36 @@ def generate_otp():
 
 def send_otp_email(receiver_email, otp):
     try:
+        # Customize subject & message based on the recipient
+        is_super_admin = (receiver_email == "abolakal@gsumailgram.edu")
+        subject = 'Admin OTP Verification Code' if is_super_admin else 'Your OTP Verification Code'
+
+        content = f"""
+        {'Hello Super Admin,' if is_super_admin else 'Hello,'}
+
+        {'Someone requested admin promotion.' if is_super_admin else 'Your One-Time Password (OTP) is:'} {otp}
+
+        {'If this wasn\'t you, ignore this message.' if is_super_admin else 'It will expire in 5 minutes.'}
+
+        Regards,
+        HealthCare App System
+        """
+
         msg = EmailMessage()
-        msg['Subject'] = 'Your OTP Verification Code'
-        msg['From'] = f"Health App <{EMAIL_ADDRESS}>"
+        msg['Subject'] = subject
+        msg['From'] = f"HealthCare App <{EMAIL_ADDRESS}>"
         msg['To'] = receiver_email
-        msg.set_content(f"""
-        Hello,
+        msg.set_content(content)
 
-        Your One-Time Password (OTP) is: {otp}
-        It will expire in 5 minutes.
-
-        If you did not request this, please ignore this message.
-
-        Thanks,
-        Health App Team
-        """)
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
             smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
             smtp.send_message(msg)
+
+        print(f"✅ OTP email sent to {receiver_email}")
+
     except Exception as e:
         print(f"❌ Failed to send email to {receiver_email}: {e}")
+
 def send_patient_id_email(receiver_email, name, patient_id):
     try:
         msg = EmailMessage()
@@ -190,12 +203,15 @@ def verify_otp():
 
         if otp_storage.get(email) == user_otp:
             user_id = str(uuid4())
+
             users_db[user_id] = {
                 'email': email,
                 'password': bcrypt.generate_password_hash(session['temp_user']['password']).decode('utf-8'),
                 'name': session['temp_user']['name'],
-                'oauth_provider': None
+                'oauth_provider': None,
+                'is_admin': False  # ✅ default to non-admin
             }
+
             emails_db[email] = user_id
             save_users()
             del otp_storage[email]
@@ -204,6 +220,7 @@ def verify_otp():
             return redirect(url_for('login'))
         else:
             flash('Invalid OTP', 'danger')
+
     return render_template('verify_otp.html')
 
 # ========== GOOGLE AUTH ==========
@@ -423,6 +440,7 @@ def upload_patient_photo(patient_id):
     flash('Patient photo updated!', 'success')
     return redirect(url_for('dashboard'))
 
+
 @app.route('/ros/<patient_id>', methods=['GET', 'POST'])
 def ros_form(patient_id):
     systems = [
@@ -433,29 +451,162 @@ def ros_form(patient_id):
     ]
 
     ros_data = load_ros()
-    ros = ros_data.get(patient_id, {})
 
-    # ✅ Find the patient object by ID
+    # Find the patient object by ID
     patient = next((p for p in patient_records if p['id'] == patient_id), None)
     if not patient:
         flash('Patient not found.', 'danger')
         return redirect(url_for('dashboard'))
 
+    # If POST (save ROS entry)
     if request.method == 'POST':
         entry = {sys: request.form[sys] for sys in systems}
         entry['notes'] = request.form['notes']
-        ros_data[patient_id] = entry
+
+        user_id = session.get('user_id')
+        user = users_db.get(user_id, {})
+
+        if patient_id not in ros_data or not isinstance(ros_data[patient_id], list):
+            ros_data[patient_id] = []
+
+        ros_data[patient_id].append({
+            "data": entry,
+            "meta": {
+                "saved_by": user.get("name", "Unknown"),
+                "email": user.get("email", "unknown@email.com"),
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            }
+        })
+
         save_ros(ros_data)
-        flash('ROS saved successfully!', 'success')
+        flash('ROS saved successfully with audit info!', 'success')
         return redirect(url_for('dashboard'))
 
-    # ✅ PASS the patient into the template
-    return render_template('ros_form.html',
-                           systems=systems,
-                           ros=ros,
-                           patient=patient,
-                           users_db=users_db,
-                           patient_id=patient_id)
+    # If GET (load latest ROS for display)
+    ros_list = ros_data.get(patient_id, [])
+
+    # Backward compatibility: convert dict → list
+    if isinstance(ros_list, dict):
+        ros_list = [ros_list]
+        ros_data[patient_id] = ros_list  # Save the correction
+        save_ros(ros_data)
+
+    ros = ros_list[-1] if ros_list else {"data": {}, "meta": {}}
+
+    return render_template(
+        'ros_form.html',
+        systems=systems,
+        ros=ros,
+        patient=patient,
+        users_db=users_db,
+        patient_id=patient_id
+    )
+
+
+@app.route('/ros-history/<patient_id>')
+def ros_history(patient_id):
+    ros_data = load_ros()
+    patient = next((p for p in patient_records if p['id'] == patient_id), None)
+    if not patient:
+        flash('Patient not found', 'danger')
+        return redirect(url_for('dashboard'))
+
+    records = ros_data.get(patient_id, [])
+
+    # If the structure is a dict (old style), wrap it in a list
+    if isinstance(records, dict):
+        records = [records]
+
+    return render_template(
+        'ros_history.html',
+        patient=patient,
+        records=records,
+        users_db=users_db
+    )
+
+@app.route('/admin-dashboard')
+def admin_dashboard():
+    user_id = session.get('user_id')
+    user = users_db.get(user_id)
+
+    # ✅ Only logged-in users with admin flag can access
+    if not user or not user.get('is_admin'):
+        flash("🚫 Access denied. Admins only.", "danger")
+        return redirect(url_for('dashboard'))
+
+    ros_data = load_ros()
+    enriched_patients = []
+
+    for patient in patient_records:
+        ros_entries = ros_data.get(patient['id'], [])
+
+        # Handle older dict format
+        if isinstance(ros_entries, dict):
+            ros_entries = [ros_entries]
+
+        last_entry = ros_entries[-1] if ros_entries else {}
+
+        enriched_patients.append({
+            **patient,
+            "last_saved": last_entry.get('meta', {}).get('timestamp', 'N/A'),
+            "saved_by": last_entry.get('meta', {}).get('saved_by', 'N/A'),
+        })
+
+    return render_template("admin_dashboard.html", patients=enriched_patients, users_db=users_db)
+
+@app.route('/promote-user', methods=['POST'])
+def promote_user():
+    email = request.form.get('email')
+    user_id = emails_db.get(email)
+
+    if not user_id:
+        flash("❌ User not found.", "danger")
+        return redirect(url_for('admin_dashboard'))
+
+    users_db[user_id]['is_admin'] = True
+    save_users()
+    flash(f"✅ {email} has been promoted to admin.", "success")
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/request-admin/<email>', methods=['POST'])
+def request_admin(email):
+    otp = str(random.randint(100000, 999999))
+    otp_storage[email] = otp
+    session['otp_pending_email'] = email
+
+   
+    session['otp_pending_email'] = email
+    send_otp_email("abolakal@gsumail.gram.edu", otp)
+
+    flash("Admin request sent. OTP will be verified shortly.", "info")
+    return redirect(url_for('dashboard'))
+
+
+@app.route('/verify-admin-otp', methods=['POST'])
+def verify_admin_otp():
+    email = request.form['email']
+    otp_input = request.form['otp']
+
+    if otp_storage.get(email) == otp_input:
+        user_id = emails_db.get(email)
+        if user_id and user_id in users_db:
+            users_db[user_id]['is_admin'] = True
+            save_users()
+            flash(f"{email} promoted to Admin successfully!", "success")
+            del otp_storage[email]
+        else:
+            flash("User not found.", "danger")
+    else:
+        flash("Invalid OTP.", "danger")
+
+    return redirect(url_for('dashboard'))
+
+@app.route('/debug-send-test')
+def debug_send_test():
+    test_otp = "123456"
+    send_otp_email("abolakal@gsumail.gram.edu", test_otp)
+    return "OTP test email sent!"
+
 
 load_data()
 # ========== MAIN ==========

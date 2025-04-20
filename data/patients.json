@@ -20,5 +20,27 @@
     "country": "United States",
     "next_of_kin": "Goat",
     "blood_group": "AB+"
+  },
+  {
+    "id": "PT-757686",
+    "name": "Sarah polum",
+    "email": "polumishaku@gmail.com",
+    "phone": "8023056711",
+    "address": "kaduna",
+    "state": "kaduna",
+    "country": "nigeria",
+    "next_of_kin": "Him",
+    "blood_group": "AB+"
+  },
+  {
+    "id": "PT-612948",
+    "name": "ABUBAKAR-SIDIQ BOLAKALE",
+    "email": "bolakaleabubakar837@gmail.com",
+    "phone": "8038009611",
+    "address": "403 main street",
+    "state": "LA",
+    "country": "United States",
+    "next_of_kin": "me",
+    "blood_group": "AB+"
   }
 ]
