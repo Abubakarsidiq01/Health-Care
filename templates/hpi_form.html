@@ -1,13 +1,203 @@
 {% extends "base.html" %}
-{% block title %}HPI Form{% endblock %}
+{% block title %}History of Present Illness{% endblock %}
+
 {% block content %}
-<div class="container mt-5">
-    <h2>History of Present Illness for {{ patient.name }}</h2>
-    <p><strong>ID:</strong> {{ patient.id }}</p>
+<div class="container-fluid hpi-landscape">
+    <h2 class="text-dark my-3">📋 History of Present Illness (HPI)</h2>
+
+    <!-- Patient Info Header -->
+    <div class="bg-light border rounded p-3 mb-4 d-print-block">
+        <strong>Name:</strong> {{ patient.name }} |
+        <strong>ID:</strong> {{ patient.id }} |
+        <strong>Phone:</strong> {{ patient.phone }}
+    </div>
 
     <form method="POST">
-        <!-- Your form fields go here -->
-        <p>Coming soon...</p>
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <label class="form-label">🕓 Onset</label>
+                <input type="text" name="onset" class="form-control" id="onset" value="{{ hpi.get('onset', '') }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">📍 Location</label>
+                <input type="text" name="location" class="form-control" id="location" value="{{ hpi.get('location', '') }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">⏳ Duration</label>
+                <input type="text" name="duration" class="form-control" id="duration" value="{{ hpi.get('duration', '') }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">🔎 Characteristics</label>
+                <input type="text" name="characteristics" class="form-control" id="characteristics" value="{{ hpi.get('characteristics', '') }}">
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <label class="form-label">📏 Severity (1–10)</label>
+                <input type="number" name="severity" class="form-control" min="1" max="10" id="severity" value="{{ hpi.get('severity', '') }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">🕐 Timing</label>
+                <input type="text" name="timing" class="form-control" id="timing" value="{{ hpi.get('timing', '') }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">⚠️ Context</label>
+                <input type="text" name="context" class="form-control" id="context" value="{{ hpi.get('context', '') }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">🔧 Modifying Factors</label>
+                <input type="text" name="modifying_factors" class="form-control" id="modifying_factors" value="{{ hpi.get('modifying_factors', '') }}">
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label">📌 Associated Signs/Symptoms</label>
+            <input type="text" name="associated_symptoms" class="form-control" id="associated_symptoms" value="{{ hpi.get('associated_symptoms', '') }}">
+        </div>
+
+        <!-- Clinical Summary (Voice-to-text) -->
+        <div class="p-3 border bg-light mb-4">
+            <label class="form-label fw-bold">📝 Clinical Narrative Summary</label>
+            <textarea name="summary" rows="4" class="form-control" id="summaryBox">{{ hpi.get('summary', '') }}</textarea>
+            <button type="button" class="btn btn-sm btn-success mt-2" onclick="toggleSpeech()">
+                <span id="micIcon">🎤</span> Dictate Summary
+            </button>
+        </div>
+
+        <!-- Prediction Box (hidden from print) -->
+        <div class="bg-white shadow-sm border rounded p-3 mb-4 d-none d-print-none" id="predictionBox">
+            <strong class="text-info">🔍 Possible Conditions:</strong>
+            <div id="predictionResult" class="mt-2 text-muted">No prediction yet.</div>
+        </div>
+
+        <!-- Generate Summary Section -->
+        <div class="hpi-summary mt-4">
+            <label class="form-label fw-bold">🧠 Auto Summary</label>
+            <textarea id="summaryBox" class="form-control" rows="4" readonly style="background: #f2f2f2;"></textarea>
+            <button type="button" class="btn btn-outline-secondary mt-2" onclick="generateHpiSummary()">✨ Generate Summary</button>
+        </div>
+
+        <hr class="my-4">
+
+        <!-- Action Buttons -->
+        <div class="d-flex justify-content-between align-items-center mt-4 flex-wrap gap-3">
+            <div class="d-flex gap-3">
+                <button type="submit" class="btn btn-primary">💾 Save HPI</button>
+                <button type="button" class="btn btn-outline-dark" onclick="window.print()">🖨️ Print Report</button>
+            </div>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">⬅ Back to Dashboard</a>
+        </div>
+
     </form>
 </div>
+
+<script>
+    let recognition, isListening = false;
+    function toggleSpeech() {
+        const box = document.getElementById("summaryBox");
+        const icon = document.getElementById("micIcon");
+
+        if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
+            alert("Speech recognition not supported.");
+            return;
+        }
+
+        if (!recognition) {
+            recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            recognition.continuous = true;
+            recognition.interimResults = false;
+            recognition.lang = "en-US";
+
+            recognition.onresult = function(event) {
+                let finalText = '';
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    if (event.results[i].isFinal) {
+                        finalText += event.results[i][0].transcript + ' ';
+                    }
+                }
+                box.value += finalText;
+            };
+            recognition.onend = () => { isListening = false; icon.innerText = "🎤"; };
+            recognition.onerror = () => { isListening = false; icon.innerText = "🎤"; };
+        }
+
+        if (!isListening) {
+            recognition.start();
+            isListening = true;
+            icon.innerHTML = "<span class='blinking'>🔴</span>";
+            box.focus();
+        } else {
+            recognition.stop();
+        }
+    }
+
+    function generateSummary() {
+        let summary = "Summary of patient's condition:\n\n";
+    
+        // Loop through all <select> fields
+        document.querySelectorAll('select').forEach(sel => {
+            const label = sel.previousElementSibling?.innerText?.trim() || sel.name;
+            const val = sel.value;
+            if (val && val !== "Normal" && val !== "Other") {
+                summary += `• ${label}: ${val}\n`;
+            }
+        });
+    
+        // Add Notes
+        const notes = document.getElementById("notesBox");
+        if (notes && notes.value.trim()) {
+            summary += `\n📝 Notes:\n${notes.value.trim()}`;
+        }
+    
+        document.getElementById("summaryBox").value = summary;
+    }
+
+    // Auto-save & load draft
+    document.addEventListener("DOMContentLoaded", () => {
+        const fields = document.querySelectorAll("input, textarea");
+        const draft = JSON.parse(localStorage.getItem("hpi_draft") || "{}");
+
+        fields.forEach(field => {
+            if (draft[field.id]) field.value = draft[field.id];
+            field.addEventListener("change", () => {
+                const updated = JSON.parse(localStorage.getItem("hpi_draft") || "{}");
+                updated[field.id] = field.value;
+                localStorage.setItem("hpi_draft", JSON.stringify(updated));
+            });
+        });
+    });
+</script>
+
+<style>
+    .hpi-landscape {
+        background: #f7f8f9;
+        font-family: 'Segoe UI', sans-serif;
+        padding: 25px;
+        border-radius: 10px;
+    }
+
+    textarea, input {
+        font-size: 14px;
+        border-radius: 6px;
+    }
+
+    @media print {
+        #predictionBox,
+        .btn,
+        nav,
+        footer {
+            display: none !important;
+        }
+    }
+
+    .blinking {
+        animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0; }
+    }
+</style>
 {% endblock %}

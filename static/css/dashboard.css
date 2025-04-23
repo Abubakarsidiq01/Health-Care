@@ -366,3 +366,64 @@ body.dark-mode .alert {
     font-weight: 600;
     color: #0077ff;
 }
+
+.hpi-notes-box {
+    background-color: #f4f1e8;
+    border: 2px solid #b0a18f;
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 30px;
+}
+
+.hpi-clinical-input {
+    background-color: #fcfcf7;
+    border: 1px solid #d4cfc4;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.landscape-hpi-layout {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 25px;
+}
+
+#summaryBox {
+    font-family: 'Courier New', monospace;
+    background-color: #f4f9f6;
+    border: 1px solid #aaa;
+    border-radius: 8px;
+}
+
+/* Make HPI form layout wider */
+.hpi-form-container {
+    max-width: 1200px;
+    margin: auto;
+    padding: 30px;
+}
+
+/* Prevent print of buttons, summary, and nav */
+@media print {
+    nav, .btn, .hpi-summary, .dark-mode-toggle {
+        display: none !important;
+    }
+
+    body {
+        background: white;
+        color: black;
+        font-size: 15px;
+    }
+
+    .container {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+    }
+
+    select, textarea {
+        border: 1px solid #ccc;
+        background: white !important;
+        color: black !important;
+    }
+}

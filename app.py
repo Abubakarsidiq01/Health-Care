@@ -130,6 +130,17 @@ def send_patient_id_email(receiver_email, name, patient_id):
     except Exception as e:
         print(f"❌ Failed to send patient ID email to {receiver_email}: {e}")
 
+def load_hpi():
+    try:
+        with open("data/hpi.json") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {}
+
+def save_hpi(data):
+    with open("data/hpi.json", "w") as f:
+        json.dump(data, f, indent=2)
+
 # === ROS JSON UTILS ===
 def load_ros():
     try:
@@ -411,15 +422,6 @@ def debug_logo():
     exists = os.path.exists(logo_path)
     return f"Logo exists: {exists}<br>Path: {logo_path}"
 
-@app.route('/hpi/<patient_id>')
-def hpi_form(patient_id):
-    patient = next((p for p in patient_records if p['id'] == patient_id), None)
-    if not patient:
-        flash('Patient not found for HPI form', 'danger')
-        return redirect(url_for('dashboard'))
-    return render_template('hpi_form.html', patient=patient)
-
-
 @app.route('/view-logo')
 def view_logo():
     with open(os.path.join(app.static_folder, 'images', 'google-logo.svg'), 'r') as f:
@@ -606,6 +608,49 @@ def debug_send_test():
     test_otp = "123456"
     send_otp_email("abolakal@gsumail.gram.edu", test_otp)
     return "OTP test email sent!"
+
+
+@app.route('/hpi/<patient_id>', methods=['GET', 'POST'])
+def hpi_form(patient_id):
+    hpi_data = load_hpi()
+    patient = next((p for p in patient_records if p['id'] == patient_id), None)
+
+    if not patient:
+        flash("Patient not found.", "danger")
+        return redirect(url_for("dashboard"))
+
+    hpi_entry = hpi_data.get(patient_id, {})
+
+    if request.method == "POST":
+        updated = {
+            "onset": request.form.get("onset"),
+            "location": request.form.get("location"),
+            "duration": request.form.get("duration"),
+            "characteristics": request.form.get("characteristics"),
+            "severity": request.form.get("severity"),
+            "timing": request.form.get("timing"),
+            "context": request.form.get("context"),
+            "modifying_factors": request.form.get("modifying_factors"),
+            "associated_symptoms": request.form.get("associated_symptoms"),
+            "narrative": request.form.get("narrative"),
+            "ai_summary": request.form.get("ai_summary")
+        }
+
+        user = users_db.get(session.get("user_id"), {})
+        hpi_data[patient_id] = {
+            "data": updated,
+            "meta": {
+                "saved_by": user.get("name", "Unknown"),
+                "email": user.get("email", "unknown@email.com"),
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            }
+        }
+
+        save_hpi(hpi_data)
+        flash("✅ HPI saved successfully.", "success")
+        return redirect(url_for('dashboard'))
+
+    return render_template("hpi_form.html", patient=patient, hpi=hpi_entry, users_db=users_db)
 
 
 load_data()
