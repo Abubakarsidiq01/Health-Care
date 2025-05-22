@@ -3,7 +3,7 @@
 
 {% block content %}
 <div class="container-fluid hpi-landscape">
-    <h2 class="text-dark my-3">📋 History of Present Illness (HPI)</h2>
+    <h2 class="text-dark my-3">History of Present Illness (HPI)</h2>
 
     <!-- Patient Info Header -->
     <div class="bg-light border rounded p-3 mb-4 d-print-block">
@@ -15,50 +15,50 @@
     <form method="POST">
         <div class="row g-3 mb-4">
             <div class="col-md-3">
-                <label class="form-label">🕓 Onset</label>
+                <label class="form-label"> Onset</label>
                 <input type="text" name="onset" class="form-control" id="onset" value="{{ hpi.get('onset', '') }}">
             </div>
             <div class="col-md-3">
-                <label class="form-label">📍 Location</label>
+                <label class="form-label">Location</label>
                 <input type="text" name="location" class="form-control" id="location" value="{{ hpi.get('location', '') }}">
             </div>
             <div class="col-md-3">
-                <label class="form-label">⏳ Duration</label>
+                <label class="form-label">Duration</label>
                 <input type="text" name="duration" class="form-control" id="duration" value="{{ hpi.get('duration', '') }}">
             </div>
             <div class="col-md-3">
-                <label class="form-label">🔎 Characteristics</label>
+                <label class="form-label">Characteristics</label>
                 <input type="text" name="characteristics" class="form-control" id="characteristics" value="{{ hpi.get('characteristics', '') }}">
             </div>
         </div>
 
         <div class="row g-3 mb-4">
             <div class="col-md-3">
-                <label class="form-label">📏 Severity (1–10)</label>
+                <label class="form-label">Severity (1–10)</label>
                 <input type="number" name="severity" class="form-control" min="1" max="10" id="severity" value="{{ hpi.get('severity', '') }}">
             </div>
             <div class="col-md-3">
-                <label class="form-label">🕐 Timing</label>
+                <label class="form-label">Timing</label>
                 <input type="text" name="timing" class="form-control" id="timing" value="{{ hpi.get('timing', '') }}">
             </div>
             <div class="col-md-3">
-                <label class="form-label">⚠️ Context</label>
+                <label class="form-label">Context</label>
                 <input type="text" name="context" class="form-control" id="context" value="{{ hpi.get('context', '') }}">
             </div>
             <div class="col-md-3">
-                <label class="form-label">🔧 Modifying Factors</label>
+                <label class="form-label"> Modifying Factors</label>
                 <input type="text" name="modifying_factors" class="form-control" id="modifying_factors" value="{{ hpi.get('modifying_factors', '') }}">
             </div>
         </div>
 
         <div class="mb-4">
-            <label class="form-label">📌 Associated Signs/Symptoms</label>
+            <label class="form-label"> Associated Signs/Symptoms</label>
             <input type="text" name="associated_symptoms" class="form-control" id="associated_symptoms" value="{{ hpi.get('associated_symptoms', '') }}">
         </div>
 
         <!-- Clinical Summary (Voice-to-text) -->
         <div class="p-3 border bg-light mb-4">
-            <label class="form-label fw-bold">📝 Clinical Narrative Summary</label>
+            <label class="form-label fw-bold">Clinical Narrative Summary</label>
             <textarea name="summary" rows="4" class="form-control" id="summaryBox">{{ hpi.get('summary', '') }}</textarea>
             <button type="button" class="btn btn-sm btn-success mt-2" onclick="toggleSpeech()">
                 <span id="micIcon">🎤</span> Dictate Summary
@@ -67,7 +67,7 @@
 
         <!-- Prediction Box (hidden from print) -->
         <div class="bg-white shadow-sm border rounded p-3 mb-4 d-none d-print-none" id="predictionBox">
-            <strong class="text-info">🔍 Possible Conditions:</strong>
+            <strong class="text-info">Possible Conditions:</strong>
             <div id="predictionResult" class="mt-2 text-muted">No prediction yet.</div>
         </div>
 
@@ -83,8 +83,8 @@
         <!-- Action Buttons -->
         <div class="d-flex justify-content-between align-items-center mt-4 flex-wrap gap-3">
             <div class="d-flex gap-3">
-                <button type="submit" class="btn btn-primary">💾 Save HPI</button>
-                <button type="button" class="btn btn-outline-dark" onclick="window.print()">🖨️ Print Report</button>
+                <button type="submit" class="btn btn-primary">Save HPI</button>
+                <button type="button" class="btn btn-outline-dark" onclick="window.print()">Print Report</button>
             </div>
             <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">⬅ Back to Dashboard</a>
         </div>
@@ -147,7 +147,7 @@
         // Add Notes
         const notes = document.getElementById("notesBox");
         if (notes && notes.value.trim()) {
-            summary += `\n📝 Notes:\n${notes.value.trim()}`;
+            summary += `\n Notes:\n${notes.value.trim()}`;
         }
     
         document.getElementById("summaryBox").value = summary;

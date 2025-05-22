@@ -11,6 +11,6 @@
     "password": "$2b$12$r/nyLayUt.NAQyonIh7pHeeCwYTyI/P1MhHHScf3kt25ZohWLTJhq",
     "name": "Sarah polum",
     "oauth_provider": null,
-    "is_admin": true
+    "is_admin": false
   }
 }
