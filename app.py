@@ -103,7 +103,7 @@ def send_otp_email(receiver_email, otp):
 
         {'Someone requested admin promotion.' if is_super_admin else 'Your One-Time Password (OTP) is:'} {otp}
 
-        {'If this wasn\'t you, ignore this message.' if is_super_admin else 'It will expire in 5 minutes.'}
+        {'If this was not you, ignore this message.' if is_super_admin else 'It will expire in 5 minutes.'}
 
         Regards,
         HealthCare App System
