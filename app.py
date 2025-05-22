@@ -5,7 +5,6 @@ load_dotenv()
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from flask_bcrypt import Bcrypt
 import os
-
 import smtplib
 from email.message import EmailMessage
 import random
@@ -22,27 +21,30 @@ import json
 # === JSON LOAD/SAVE UTILS ===
 def load_data():
     global users_db, emails_db, patient_records
-
-    os.makedirs('data', exist_ok=True) 
-
-    if not os.path.exists('data/users.json'):
-        with open('data/users.json', 'w') as f:
-            json.dump({}, f)
-
-    if not os.path.exists('data/emails.json'):
-        with open('data/emails.json', 'w') as f:
-            json.dump({}, f)
-
-    if not os.path.exists('data/patients.json'):
-        with open('data/patients.json', 'w') as f:
-            json.dump([], f)
-
+    
+    # Ensure data directory exists
+    os.makedirs('data', exist_ok=True)
+    
+    # Initialize files if they don't exist
+    default_data = {
+        'users.json': {},
+        'emails.json': {},
+        'patients.json': []
+    }
+    
+    for filename, default in default_data.items():
+        filepath = os.path.join('data', filename)
+        if not os.path.exists(filepath):
+            with open(filepath, 'w') as f:
+                json.dump(default, f)
+    
+    # Load data from files
     with open('data/users.json') as f:
         users_db = json.load(f)
-
+    
     with open('data/emails.json') as f:
         emails_db = json.load(f)
-
+    
     with open('data/patients.json') as f:
         patient_records = json.load(f)
 
