@@ -22,15 +22,30 @@ import json
 # === JSON LOAD/SAVE UTILS ===
 def load_data():
     global users_db, emails_db, patient_records
-    try:
-        with open('data/users.json') as f:
-            users_db = json.load(f)
-        with open('data/emails.json') as f:
-            emails_db = json.load(f)
-        with open('data/patients.json') as f:
-            patient_records = json.load(f)
-    except Exception as e:
-        print("Error loading data:", e)
+
+    os.makedirs('data', exist_ok=True) 
+
+    if not os.path.exists('data/users.json'):
+        with open('data/users.json', 'w') as f:
+            json.dump({}, f)
+
+    if not os.path.exists('data/emails.json'):
+        with open('data/emails.json', 'w') as f:
+            json.dump({}, f)
+
+    if not os.path.exists('data/patients.json'):
+        with open('data/patients.json', 'w') as f:
+            json.dump([], f)
+
+    with open('data/users.json') as f:
+        users_db = json.load(f)
+
+    with open('data/emails.json') as f:
+        emails_db = json.load(f)
+
+    with open('data/patients.json') as f:
+        patient_records = json.load(f)
+
 
 def save_users():
     with open('data/users.json', 'w') as f:
