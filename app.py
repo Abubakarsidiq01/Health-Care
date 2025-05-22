@@ -5,7 +5,7 @@ load_dotenv()
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from flask_bcrypt import Bcrypt
 import os
-os.makedirs('data', exist_ok=True)
+
 import smtplib
 from email.message import EmailMessage
 import random
