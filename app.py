@@ -665,7 +665,7 @@ def hpi_form(patient_id):
         }
 
         save_hpi(hpi_data)
-        flash("✅ HPI saved successfully.", "success")
+        flash("HPI saved successfully.", "success")
         return redirect(url_for('dashboard'))
 
     return render_template("hpi_form.html", patient=patient, hpi=hpi_entry, users_db=users_db)
