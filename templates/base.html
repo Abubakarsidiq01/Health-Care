@@ -42,7 +42,7 @@
                 <li class="nav-item"><a class="nav-link" href="{{ url_for('dashboard') }}">🏠 Home</a></li>
                 <li class="nav-item"><a class="nav-link" href="#">🩺 ROS</a></li>
                 <li class="nav-item"><a class="nav-link" href="#">📝 HPI</a></li>
-                {% if users_db[session['user_id']].is_admin %}
+                {% if session['user_id'] and users_db.get(session['user_id'], {}).get('is_admin', False) %}
                 <li class="nav-item"><a class="nav-link text-warning fw-bold" href="{{ url_for('admin_dashboard') }}">👑 Admin Dashboard</a></li>
                 {% else %}
                 <li class="nav-item">

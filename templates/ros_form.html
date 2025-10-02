@@ -116,6 +116,10 @@
             recognition.continuous = true;
             recognition.interimResults = false;
 
+            recognition.onstart = () => {
+                console.log("Speech recognition started");
+            };
+
             recognition.onresult = function(event) {
                 let finalTranscript = '';
                 for (let i = event.resultIndex; i < event.results.length; ++i) {
@@ -124,16 +128,20 @@
                     }
                 }
                 notesBox.value += finalTranscript;
+                console.log("Transcribed:", finalTranscript);
             };
 
             recognition.onend = () => {
                 isListening = false;
                 micIcon.innerText = "🎤";
+                console.log("Speech recognition ended");
             };
 
-            recognition.onerror = () => {
+            recognition.onerror = (event) => {
                 isListening = false;
                 micIcon.innerText = "🎤";
+                console.error("Speech recognition error:", event.error);
+                alert("Speech recognition error: " + event.error + ". Please check microphone permissions.");
             };
         }
 

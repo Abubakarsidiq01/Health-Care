@@ -47,7 +47,23 @@ def load_data():
     
     with open('data/patients.json') as f:
         patient_records = json.load(f)
+    
+    # Migrate existing users to have is_admin attribute
+    migrate_users()
 
+def migrate_users():
+    """Ensure all users have the is_admin attribute"""
+    global users_db
+    updated = False
+    
+    for user_id, user_data in users_db.items():
+        if 'is_admin' not in user_data:
+            user_data['is_admin'] = False
+            updated = True
+    
+    if updated:
+        save_users()
+        print("✅ Migrated users to include is_admin attribute")
 
 def save_users():
     with open('data/users.json', 'w') as f:
@@ -83,7 +99,7 @@ google = oauth.register(
     authorize_url='https://accounts.google.com/o/oauth2/auth',
     access_token_url='https://accounts.google.com/o/oauth2/token',
     client_kwargs={'scope': 'openid email profile'},
-    redirect_uri='http://127.0.0.1:5000/auth/google/callback',
+    redirect_uri=os.getenv('GOOGLE_REDIRECT_URI', 'http://127.0.0.1:5000/auth/google/callback'),
     server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
     jwks_uri='https://www.googleapis.com/oauth2/v3/certs'
 )
@@ -627,6 +643,10 @@ def debug_send_test():
     send_otp_email("abolakal@gsumailgram.edu", test_otp)
     return "OTP test email sent!"
 
+@app.route('/voice-test')
+def voice_test():
+    return render_template('voice_test.html')
+
 
 @app.route('/hpi/<patient_id>', methods=['GET', 'POST'])
 def hpi_form(patient_id):
@@ -674,4 +694,5 @@ def hpi_form(patient_id):
 load_data()
 # ========== MAIN ==========
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=os.environ.get('FLASK_ENV') != 'production')

@@ -59,7 +59,7 @@
         <!-- Clinical Summary (Voice-to-text) -->
         <div class="p-3 border bg-light mb-4">
             <label class="form-label fw-bold">Clinical Narrative Summary</label>
-            <textarea name="summary" rows="4" class="form-control" id="summaryBox">{{ hpi.get('summary', '') }}</textarea>
+            <textarea name="summary" rows="4" class="form-control" id="narrativeBox">{{ hpi.get('summary', '') }}</textarea>
             <button type="button" class="btn btn-sm btn-success mt-2" onclick="toggleSpeech()">
                 <span id="micIcon">🎤</span> Dictate Summary
             </button>
@@ -95,7 +95,7 @@
 <script>
     let recognition, isListening = false;
     function toggleSpeech() {
-        const box = document.getElementById("summaryBox");
+        const box = document.getElementById("narrativeBox");
         const icon = document.getElementById("micIcon");
 
         if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
@@ -109,6 +109,10 @@
             recognition.interimResults = false;
             recognition.lang = "en-US";
 
+            recognition.onstart = () => {
+                console.log("Speech recognition started");
+            };
+
             recognition.onresult = function(event) {
                 let finalText = '';
                 for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -117,9 +121,19 @@
                     }
                 }
                 box.value += finalText;
+                console.log("Transcribed:", finalText);
             };
-            recognition.onend = () => { isListening = false; icon.innerText = "🎤"; };
-            recognition.onerror = () => { isListening = false; icon.innerText = "🎤"; };
+            recognition.onend = () => { 
+                isListening = false; 
+                icon.innerText = "🎤"; 
+                console.log("Speech recognition ended");
+            };
+            recognition.onerror = (event) => { 
+                isListening = false; 
+                icon.innerText = "🎤"; 
+                console.error("Speech recognition error:", event.error);
+                alert("Speech recognition error: " + event.error + ". Please check microphone permissions.");
+            };
         }
 
         if (!isListening) {

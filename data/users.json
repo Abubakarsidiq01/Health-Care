@@ -12,5 +12,12 @@
     "name": "Sarah polum",
     "oauth_provider": null,
     "is_admin": false
+  },
+  "3434288c-899f-454e-9112-922f4efa35e5": {
+    "email": "bolakaleabubakar74@gmail.com",
+    "password": "$2b$12$HUbfsRz5mYwBMIGT4q1YZeTQCb.Hv3CKBP.5dMngsnG4i8f/bl8nC",
+    "name": "Abubakar-sidiq Bolakale",
+    "oauth_provider": null,
+    "is_admin": false
   }
 }
