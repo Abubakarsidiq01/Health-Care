@@ -596,7 +596,7 @@ def request_admin(email):
 
    
     session['otp_pending_email'] = email
-    send_otp_email("abolakal@gsumail.gram.edu", otp)
+    send_otp_email("abolakal@gsumailgram.edu", otp)
 
     flash("Admin request sent. OTP will be verified shortly.", "info")
     return redirect(url_for('dashboard'))
@@ -624,7 +624,7 @@ def verify_admin_otp():
 @app.route('/debug-send-test')
 def debug_send_test():
     test_otp = "123456"
-    send_otp_email("abolakal@gsumail.gram.edu", test_otp)
+    send_otp_email("abolakal@gsumailgram.edu", test_otp)
     return "OTP test email sent!"
 
 
