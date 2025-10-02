@@ -253,4 +253,4 @@ For support and questions, please open an issue on GitHub or contact the develop
 **Note**: This is a healthcare management system intended for educational and development purposes. Ensure compliance with healthcare regulations (HIPAA, etc.) before using in production environments.
 
 ## 🌐 Live Demo
-**Deployed Application**: https://hpi-ros.onrender.com
+**Deployed Application**: https://health-care-g7dj.onrender.com
